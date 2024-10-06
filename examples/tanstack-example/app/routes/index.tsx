@@ -11,7 +11,7 @@ import { getHeaders } from "vinxi/http";
 export const Route = createFileRoute("/")({
 	component: Home,
 	async loader(ctx) {
-		const h = new Headers(getHeaders());
+		const h = new Headers(getHeaders() as any);
 		const res = await auth.api.getSession({
 			headers: h,
 		});
@@ -78,7 +78,7 @@ function Home() {
 						</div>
 					</div>
 					<div className="flex items-center justify-center">
-						<Link href="/sign-in">
+						<Link to="/sign-in">
 							<Button className="gap-2">
 								{!session?.session ? (
 									<svg
@@ -107,7 +107,7 @@ function Home() {
 								)}
 								{!session?.session
 									? "Sign In"
-									: `Welcome, ${session?.session.user.name}`}
+									: `Welcome, ${session?.user.name}`}
 							</Button>
 						</Link>
 					</div>

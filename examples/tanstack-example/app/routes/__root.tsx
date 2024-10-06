@@ -6,6 +6,7 @@ import * as React from "react";
 import appCss from "../global.css?url";
 import { Wrapper } from "@/components/layout";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRoute({
 	meta: () => [
@@ -41,6 +42,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 			<Body>
 				<Wrapper>{children}</Wrapper>
+				<Toaster />
 				<ScrollRestoration />
 				<Scripts />
 			</Body>
