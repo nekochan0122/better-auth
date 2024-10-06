@@ -15,7 +15,7 @@ import { signIn } from "@/lib/auth-client";
 import { DiscordLogoIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
 import { Key, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function SignInCard() {
@@ -23,6 +23,10 @@ export function SignInCard() {
 	const [password, setPassword] = useState("");
 	const [rememberMe, setRememberMe] = useState(false);
 	const [loading, setLoading] = useState(false);
+
+	useEffect(() => {
+		alert("Hello World");
+	}, []);
 	return (
 		<Card className="z-50 rounded-md rounded-t-none max-w-md">
 			<CardHeader>
@@ -166,9 +170,9 @@ export function SignInCard() {
 						variant="outline"
 						className="gap-2"
 						onClick={async () => {
-							await signIn.passkey({
-								callbackURL: "/dashboard",
-							});
+							// await signIn.passkey({
+							// 	callbackURL: "/dashboard",
+							// });
 						}}
 					>
 						<Key size={16} />
