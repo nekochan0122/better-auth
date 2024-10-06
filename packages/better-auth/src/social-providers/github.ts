@@ -1,7 +1,7 @@
 import { betterFetch } from "@better-fetch/fetch";
 import { GitHub } from "arctic";
-import type { OAuthProvider } from ".";
-import { getRedirectURI } from "./utils";
+import type { OAuthProvider, ProviderOptions } from ".";
+import { getRedirectURI, validateAuthorizationCode } from "./utils";
 
 export interface GithubProfile {
 	login: string;
@@ -52,30 +52,28 @@ export interface GithubProfile {
 	last_name: string;
 }
 
-export interface GithubOptions {
-	clientId: string;
-	clientSecret: string;
-	redirectURI?: string;
-}
-export const github = ({
-	clientId,
-	clientSecret,
-	redirectURI,
-}: GithubOptions) => {
+export interface GithubOptions extends ProviderOptions {}
+export const github = (options: GithubOptions) => {
 	const githubArctic = new GitHub(
-		clientId,
-		clientSecret,
-		getRedirectURI("github", redirectURI),
+		options.clientId,
+		options.clientSecret,
+		getRedirectURI("github", options.redirectURI),
 	);
+	const tokenEndpoint = "https://github.com/login/oauth/access_token";
 	return {
 		id: "github",
 		name: "Github",
 		createAuthorizationURL({ state, scopes }) {
-			const _scopes = scopes || ["user:email"];
+			const _scopes = options.scope || scopes || ["user:email"];
 			return githubArctic.createAuthorizationURL(state, _scopes);
 		},
-		validateAuthorizationCode: async (state) => {
-			return await githubArctic.validateAuthorizationCode(state);
+		validateAuthorizationCode: async (code, _, redirect) => {
+			return validateAuthorizationCode({
+				code,
+				redirectURI: options.redirectURI || getRedirectURI("google", redirect),
+				options,
+				tokenEndpoint,
+			});
 		},
 		async getUserInfo(token) {
 			const { data: profile, error } = await betterFetch<GithubProfile>(
@@ -114,13 +112,11 @@ export const github = ({
 			}
 			return {
 				user: {
-					id: profile.id,
-					name: profile.name,
+					id: profile.id.toString(),
+					name: profile.name || profile.login,
 					email: profile.email,
 					image: profile.avatar_url,
 					emailVerified,
-					createdAt: new Date(),
-					updatedAt: new Date(),
 				},
 				data: profile,
 			};

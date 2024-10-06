@@ -94,7 +94,7 @@ export default function Hero() {
 	return (
 		<section className="w-full mx-auto px-10 flex min-h-[85vh] py-16 items-center justify-center gap-20">
 			<div className="overflow-hidden bg-transparent dark:-mb-32 dark:mt-[-4.75rem] dark:pb-32 dark:pt-[4.75rem] md:px-10">
-				<div className="grid max-w-full mx-auto grid-cols-1 items-center gap-x-8 gap-y-16 px-4 lg:max-w-8xl lg:grid-cols-2 lg:px-8 xl:gap-x-16 xl:px-12">
+				<div className="grid max-w-full mx-auto grid-cols-1 items-center gap-x-8 gap-y-16 px-4 lg:max-w-8xl lg:grid-cols-2 lg:px-8 xl:gap-x-16 xl:px-12 py-2 lg:py-4">
 					<div className="relative z-10 md:text-center lg:text-left">
 						<div className="relative">
 							<div className="flex flex-col items-start gap-2">
@@ -113,7 +113,7 @@ export default function Hero() {
 							</p>
 							{
 								<>
-									<div className="mt-8 flex gap-4 font-sans md:justify-center lg:justify-start flex-col md:flex-row">
+									<div className="mt-8 flex w-fit gap-4 font-sans md:justify-center lg:justify-start flex-col md:flex-row">
 										<Link
 											href="/docs"
 											className="px-4 md:px-8 py-1.5  border-2 border-black dark:border-stone-100 uppercase bg-white text-black transition duration-200 text-sm shadow-[1px_1px_rgba(0,0,0),2px_2px_rgba(0,0,0),3px_3px_rgba(0,0,0),4px_4px_rgba(0,0,0),5px_5px_0px_0px_rgba(0,0,0)] dark:shadow-[1px_1px_rgba(255,255,255),2px_2px_rgba(255,255,255),3px_3px_rgba(255,255,255),4px_4px_rgba(255,255,255),5px_5px_0px_0px_rgba(255,255,255)] dark:hover:shadow-sm hover:shadow-sm"

@@ -1,5 +1,5 @@
 "use client";
-import { Menu, X } from "lucide-react";
+import { Menu, Sun, X } from "lucide-react";
 import Link from "next/link";
 import { Fragment, createContext, useContext, useState } from "react";
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import { AnimatePresence, FadeIn } from "@/components/ui/fade-in";
 import { contents } from "./sidebar-content";
+import { MobileThemeToggle, ThemeToggle } from "./theme-toggler";
 
 interface NavbarMobileContextProps {
 	isOpen: boolean;
@@ -56,14 +57,17 @@ export const NavbarMobileBtn: React.FC = () => {
 	const { toggleNavbar } = useNavbarMobile();
 
 	return (
-		<button
-			className="text-muted-foreground ml-auto px-2.5 block md:hidden"
-			onClick={() => {
-				toggleNavbar();
-			}}
-		>
-			<Menu />
-		</button>
+		<div className="flex items-center ">
+			<MobileThemeToggle />
+			<button
+				className="text-muted-foreground overflow-hidden px-2.5 block md:hidden"
+				onClick={() => {
+					toggleNavbar();
+				}}
+			>
+				<Menu />
+			</button>
+		</div>
 	);
 };
 
@@ -71,48 +75,50 @@ export const NavbarMobile = () => {
 	const { isOpen, toggleNavbar } = useNavbarMobile();
 
 	return (
-		<AnimatePresence>
-			{isOpen && (
-				<FadeIn
-					fromTopToBottom
-					className="absolute top-[57px] left-0 bg-background h-[calc(100%-57px-27px)] w-full z-[1000] p-5 divide-y overflow-y-auto"
-				>
-					{navMenu.map((menu, i) => (
-						<Fragment key={menu.name}>
-							{menu.child ? (
-								<Accordion type="single" collapsible>
-									<AccordionItem value={menu.name}>
-										<AccordionTrigger className="text-2xl font-normal text-foreground">
-											{menu.name}
-										</AccordionTrigger>
-										<AccordionContent className="pl-5 divide-y">
-											{menu.child.map((child, j) => (
-												<Link
-													href={child.path}
-													key={child.name}
-													className="block text-xl py-2 first:pt-0 last:pb-0 border-b last:border-0 text-muted-foreground"
-													onClick={toggleNavbar}
-												>
-													{child.name}
-												</Link>
-											))}
-										</AccordionContent>
-									</AccordionItem>
-								</Accordion>
-							) : (
-								<Link
-									href={menu.path}
-									className="block text-2xl py-4 first:pt-0 last:pb-0"
-									onClick={toggleNavbar}
-								>
-									{menu.name}
-								</Link>
-							)}
-						</Fragment>
-					))}
-				</FadeIn>
-			)}
-		</AnimatePresence>
+		<div className="fixed top-[50px] z-40 left-0  px-4 mx-auto w-full h-auto backdrop-blur-lg dark:bg-transparent md:hidden transform-gpu [border:1px_solid_rgba(255,255,255,.1)] [box-shadow:0_-40px_80px_-20px_#8686f01f_inset]">
+			<AnimatePresence>
+				{isOpen && (
+					<FadeIn
+						fromTopToBottom
+						className="bg-transparent p-5 divide-y overflow-y-auto"
+					>
+						{navMenu.map((menu, i) => (
+							<Fragment key={menu.name}>
+								{menu.child ? (
+									<Accordion type="single" collapsible>
+										<AccordionItem value={menu.name}>
+											<AccordionTrigger className="text-2xl font-normal text-foreground">
+												{menu.name}
+											</AccordionTrigger>
+											<AccordionContent className="pl-5 divide-y">
+												{menu.child.map((child, j) => (
+													<Link
+														href={child.path}
+														key={child.name}
+														className="block text-xl py-2 first:pt-0 last:pb-0 border-b last:border-0 text-muted-foreground"
+														onClick={toggleNavbar}
+													>
+														{child.name}
+													</Link>
+												))}
+											</AccordionContent>
+										</AccordionItem>
+									</Accordion>
+								) : (
+									<Link
+										href={menu.path}
+										className="block text-2xl py-4 first:pt-0 last:pb-0"
+										onClick={toggleNavbar}
+									>
+										{menu.name}
+									</Link>
+								)}
+							</Fragment>
+						))}
+					</FadeIn>
+				)}
+			</AnimatePresence>
+		</div>
 	);
 };
 

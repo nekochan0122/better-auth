@@ -1,9 +1,4 @@
-import {
-	APIError,
-	type Context,
-	type Endpoint,
-	createRouter,
-} from "better-call";
+import { APIError, type Endpoint, createRouter } from "better-call";
 import type { AuthContext } from "../init";
 import type { BetterAuthOptions } from "../types";
 import type { UnionToIntersection } from "../types/helper";
@@ -254,3 +249,4 @@ export const router = <C extends AuthContext, Option extends BetterAuthOptions>(
 export * from "./routes";
 export * from "./middlewares";
 export * from "./call";
+export { APIError } from "better-call";

@@ -25,12 +25,15 @@ describe("anonymous", async () => {
 			},
 		});
 		const userId = anonUser.data?.user.id;
+		const email = anonUser.data?.user.email;
 		const isAnonymous = anonUser.data?.user.isAnonymous;
 		const sessionId = anonUser.data?.session.id;
 		expect(userId).toBeDefined();
+		expect(email?.endsWith("localhost:3000")).toBeTruthy();
 		expect(isAnonymous).toBeTruthy();
 		expect(sessionId).toBeDefined();
 	});
+
 	it("link anonymous user account", async () => {
 		const linkedAccount = await client.user.linkAnonymous({
 			email: "valid-email@email.com",

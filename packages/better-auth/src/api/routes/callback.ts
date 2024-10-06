@@ -77,7 +77,9 @@ export const callbackOAuth = createAuthEndpoint(
 			);
 		}
 		const { callbackURL, currentURL, dontRememberMe } = parsedState.data;
+
 		if (!user || data.success === false) {
+			logger.error("Unable to get user info", data.error);
 			throw c.redirect(
 				`${c.context.baseURL}/error?error=oauth_validation_failed`,
 			);

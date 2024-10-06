@@ -4,7 +4,18 @@ import type { BetterAuthPlugin } from "../../types";
 import { setSessionCookie } from "../../utils/cookies";
 import { z } from "zod";
 import { generateId } from "../../utils/id";
-export const anonymous = () => {
+import { getOrigin } from "../../utils/base-url";
+
+export interface AnonymousOptions {
+	/**
+	 * Configure the domain name of the temporary email
+	 * address for anonymous users in the database.
+	 * @default "baseURL"
+	 */
+	emailDomainName?: string;
+}
+
+export const anonymous = (options?: AnonymousOptions) => {
 	return {
 		id: "anonymous",
 		endpoints: {
@@ -14,11 +25,13 @@ export const anonymous = () => {
 					method: "POST",
 				},
 				async (ctx) => {
-					const tempEmail =
-						"temporary-" + Date.now().toString() + "-better-auth@email.com";
+					const { emailDomainName = getOrigin(ctx.context.baseURL) } =
+						options || {};
+					const id = generateId();
+					const email = `temp-${id}@${emailDomainName}`;
 					const newUser = await ctx.context.internalAdapter.createUser({
-						id: generateId(),
-						email: tempEmail,
+						id,
+						email,
 						emailVerified: false,
 						isAnonymous: true,
 						name: "Anonymous",
