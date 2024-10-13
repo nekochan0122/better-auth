@@ -23,11 +23,14 @@ export const bearer = () => {
 						if (!token) {
 							return;
 						}
-						const signedToken = await serializeSigned(
-							"",
-							token,
-							c.context.secret,
-						);
+
+						let signedToken = "";
+
+						if (token.includes(".")) {
+							signedToken = token.split(".")[1];
+						} else {
+							signedToken = await serializeSigned("", token, c.context.secret);
+						}
 						if (c.request) {
 							c.request.headers.set(
 								"cookie",

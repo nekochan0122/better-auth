@@ -110,13 +110,12 @@ export const createInternalAdapter = (
 			userId: string,
 			request?: Request | Headers,
 			dontRememberMe?: boolean,
-			inputData?: Partial<Session> & Record<string, any>,
+			override?: Partial<Session> & Record<string, any>,
 		) => {
 			const headers = request instanceof Request ? request.headers : request;
 			const data: Session = {
 				id: generateId(),
 				userId,
-				...inputData,
 				/**
 				 * If the user doesn't want to be remembered
 				 * set the session to expire in 1 day.
@@ -127,6 +126,7 @@ export const createInternalAdapter = (
 					: getDate(sessionExpiration, "sec"),
 				ipAddress: headers?.get("x-forwarded-for") || "",
 				userAgent: headers?.get("user-agent") || "",
+				...override,
 			};
 			const session = await createWithHooks(data, "session");
 			if (secondaryStorage && session) {
@@ -245,7 +245,10 @@ export const createInternalAdapter = (
 				],
 			});
 		},
-		findUserByEmail: async (email: string) => {
+		findUserByEmail: async (
+			email: string,
+			options?: { includeAccounts: boolean },
+		) => {
 			const user = await adapter.findOne<User>({
 				model: tables.user.tableName,
 				where: [
@@ -256,18 +259,24 @@ export const createInternalAdapter = (
 				],
 			});
 			if (!user) return null;
-			const accounts = await adapter.findMany<Account>({
-				model: tables.account.tableName,
-				where: [
-					{
-						value: user.id,
-						field: tables.account.fields.userId.fieldName || "userId",
-					},
-				],
-			});
+			if (options?.includeAccounts) {
+				const accounts = await adapter.findMany<Account>({
+					model: tables.account.tableName,
+					where: [
+						{
+							value: user.id,
+							field: tables.account.fields.userId.fieldName || "userId",
+						},
+					],
+				});
+				return {
+					user,
+					accounts,
+				};
+			}
 			return {
 				user,
-				accounts,
+				accounts: [],
 			};
 		},
 		findUserById: async (userId: string) => {
@@ -285,6 +294,7 @@ export const createInternalAdapter = (
 		linkAccount: async (account: Omit<Account, "id"> & Partial<Account>) => {
 			const _account = await createWithHooks(
 				{
+					id: generateId(),
 					...account,
 				},
 				"account",
