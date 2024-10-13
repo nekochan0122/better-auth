@@ -5,6 +5,7 @@ import {
 	Mailbox,
 	Phone,
 	ScanFace,
+	ShieldCheck,
 	UserCircle,
 	Users2,
 	UserSquare2,
@@ -119,23 +120,6 @@ export const contents: Content[] = [
 				),
 			},
 			{
-				title: "Client",
-				href: "/docs/concepts/client",
-				icon: () => (
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="1.2em"
-						height="1.2em"
-						viewBox="0 0 24 24"
-					>
-						<path
-							fill="currentColor"
-							d="M4 8h4V4H4zm6 12h4v-4h-4zm-6 0h4v-4H4zm0-6h4v-4H4zm6 0h4v-4h-4zm6-10v4h4V4zm-6 4h4V4h-4zm6 6h4v-4h-4zm0 6h4v-4h-4z"
-						></path>
-					</svg>
-				),
-			},
-			{
 				title: "CLI",
 				icon: () => (
 					<svg
@@ -151,6 +135,23 @@ export const contents: Content[] = [
 					</svg>
 				),
 				href: "/docs/concepts/cli",
+			},
+			{
+				title: "Client",
+				href: "/docs/concepts/client",
+				icon: () => (
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="1.2em"
+						height="1.2em"
+						viewBox="0 0 24 24"
+					>
+						<path
+							fill="currentColor"
+							d="M4 8h4V4H4zm6 12h4v-4h-4zm-6 0h4v-4H4zm0-6h4v-4H4zm6 0h4v-4h-4zm6-10v4h4V4zm-6 4h4V4h-4zm6 6h4v-4h-4zm0 6h4v-4h-4z"
+						></path>
+					</svg>
+				),
 			},
 			{
 				title: "Cookies",
@@ -225,7 +226,7 @@ export const contents: Content[] = [
 				href: "/docs/concepts/rate-limit",
 			},
 			{
-				title: "Session Management",
+				title: "Sessions",
 				href: "/docs/concepts/session-management",
 				icon: () => (
 					<svg
@@ -562,6 +563,11 @@ export const contents: Content[] = [
 				icon: Icons.node,
 				href: "/docs/integrations/node",
 			},
+			{
+				title: "Elysia",
+				icon: Icons.elysia,
+				href: "/docs/integrations/elysia",
+			},
 		],
 	},
 	{
@@ -587,33 +593,33 @@ export const contents: Content[] = [
 				title: "Authentication",
 				group: true,
 				href: "/docs/plugins/1st-party-plugins",
-				icon: LucideAArrowDown,
+				icon: () => <LucideAArrowDown className="w-4 h-4" />,
 			},
 
 			{
 				title: "Two Factor",
-				icon: ScanFace,
+				icon: () => <ScanFace className="w-4 h-4" />,
 				href: "/docs/plugins/2fa",
 			},
 			{
 				title: "Username",
-				icon: UserSquare2,
+				icon: () => <UserSquare2 className="w-4 h-4" />,
 				href: "/docs/plugins/username",
 			},
 			{
 				title: "Anonymous",
-				icon: UserCircle,
+				icon: () => <UserCircle className="w-4 h-4" />,
 				href: "/docs/plugins/anonymous",
 			},
 			{
 				title: "Phone Number",
-				icon: Phone,
+				icon: () => <Phone className="w-4 h-4" />,
 				href: "/docs/plugins/phone-number",
 			},
 			{
 				title: "Magic Link",
 				href: "/docs/plugins/magic-link",
-				icon: Mailbox,
+				icon: () => <Mailbox className="w-4 h-4" />,
 			},
 			{
 				title: "Passkey",
@@ -632,28 +638,72 @@ export const contents: Content[] = [
 					</svg>
 				),
 			},
-
+			{
+				title: "Generic OAuth",
+				href: "/docs/plugins/generic-oauth",
+				icon: () => (
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="1em"
+						height="1em"
+						viewBox="0 0 24 24"
+					>
+						<g
+							fill="none"
+							stroke="currentColor"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+						>
+							<path d="M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0"></path>
+							<path d="M12.556 6c.65 0 1.235.373 1.508.947l2.839 7.848a1.646 1.646 0 0 1-1.01 2.108a1.673 1.673 0 0 1-2.068-.851L13.365 15h-2.73l-.398.905A1.67 1.67 0 0 1 8.26 16.95l-.153-.047a1.647 1.647 0 0 1-1.056-1.956l2.824-7.852a1.66 1.66 0 0 1 1.409-1.087z"></path>
+						</g>
+					</svg>
+				),
+			},
 			{
 				title: "Authorization",
 				group: true,
 				href: "/docs/plugins/1st-party-plugins",
-				icon: LucideAArrowDown,
+				icon: () => <LucideAArrowDown className="w-4 h-4" />,
+			},
+			{
+				title: "Admin",
+				href: "/docs/plugins/admin",
+				icon: () => (
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="1.2em"
+						height="1.2em"
+						viewBox="0 0 24 24"
+					>
+						<path
+							className="fill-current"
+							d="M12 23C6.443 21.765 2 16.522 2 11V5l10-4l10 4v6c0 5.524-4.443 10.765-10 12M4 6v5a10.58 10.58 0 0 0 8 10a10.58 10.58 0 0 0 8-10V6l-8-3Z"
+						></path>
+						<circle cx="12" cy="8.5" r="2.5" className="fill-current"></circle>
+						<path
+							className="fill-current"
+							d="M7 15a5.78 5.78 0 0 0 5 3a5.78 5.78 0 0 0 5-3c-.025-1.896-3.342-3-5-3c-1.667 0-4.975 1.104-5 3"
+						></path>
+					</svg>
+				),
 			},
 			{
 				title: "Organization",
-				icon: Users2,
+				icon: () => <Users2 className="w-4 h-4" />,
 				href: "/docs/plugins/organization",
 			},
 			{
 				title: "Utility",
 				group: true,
 				href: "/docs/plugins/1st-party-plugins",
-				icon: LucideAArrowDown,
+				icon: () => <LucideAArrowDown className="w-4 h-4" />,
 			},
 
 			{
 				title: "Bearer",
-				icon: Key,
+				icon: () => <Key className="w-4 h-4" />,
 				href: "/docs/plugins/bearer",
 			},
 		],
@@ -690,6 +740,11 @@ export const contents: Content[] = [
 						></path>
 					</svg>
 				),
+			},
+			{
+				title: "Security",
+				href: "/docs/reference/security",
+				icon: () => <ShieldCheck className="text-current w-4 h-4" />,
 			},
 		],
 	},

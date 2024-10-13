@@ -5,7 +5,7 @@ import { oAuthProviderList } from "../../social-providers";
 import { generateState } from "../../utils/state";
 import { createAuthEndpoint } from "../call";
 import { getSessionFromCtx } from "./session";
-import { setSessionCookie } from "../../utils/cookies";
+import { setSessionCookie } from "../../cookies";
 
 export const signInOAuth = createAuthEndpoint(
 	"/sign-in/social",
@@ -30,10 +30,6 @@ export const signInOAuth = createAuthEndpoint(
 			 * OAuth2 provider to use`
 			 */
 			provider: z.enum(oAuthProviderList),
-			/**
-			 * If this is true the session will only be valid for the current browser session
-			 */
-			dontRememberMe: z.boolean().default(false).optional(),
 		}),
 	},
 	async (c) => {
@@ -62,37 +58,33 @@ export const signInOAuth = createAuthEndpoint(
 			callbackURL || currentURL?.origin || c.context.baseURL,
 			c.query?.currentURL,
 		);
-		try {
-			await c.setSignedCookie(
-				cookie.state.name,
-				state.code,
-				c.context.secret,
-				cookie.state.options,
-			);
-			const codeVerifier = generateCodeVerifier();
-			await c.setSignedCookie(
-				cookie.pkCodeVerifier.name,
-				codeVerifier,
-				c.context.secret,
-				cookie.pkCodeVerifier.options,
-			);
-			const url = provider.createAuthorizationURL({
-				state: state.state,
-				codeVerifier,
-			});
-			url.searchParams.set(
-				"redirect_uri",
-				`${c.context.baseURL}/callback/${c.body.provider}`,
-			);
-			return {
-				url: url.toString(),
-				state: state.state,
-				codeVerifier,
-				redirect: true,
-			};
-		} catch (e) {
-			throw new APIError("INTERNAL_SERVER_ERROR");
-		}
+		await c.setSignedCookie(
+			cookie.state.name,
+			state.code,
+			c.context.secret,
+			cookie.state.options,
+		);
+		const codeVerifier = generateCodeVerifier();
+		await c.setSignedCookie(
+			cookie.pkCodeVerifier.name,
+			codeVerifier,
+			c.context.secret,
+			cookie.pkCodeVerifier.options,
+		);
+		const url = await provider.createAuthorizationURL({
+			state: state.state,
+			codeVerifier,
+		});
+		url.searchParams.set(
+			"redirect_uri",
+			`${c.context.baseURL}/callback/${c.body.provider}`,
+		);
+		return c.json({
+			url: url.toString(),
+			state: state.state,
+			codeVerifier,
+			redirect: true,
+		});
 	},
 );
 
@@ -177,8 +169,11 @@ export const signInEmail = createAuthEndpoint(
 		);
 		if (!session) {
 			ctx.context.logger.error("Failed to create session");
-			throw new APIError("INTERNAL_SERVER_ERROR");
+			throw new APIError("UNAUTHORIZED", {
+				message: "Failed to create session",
+			});
 		}
+
 		await setSessionCookie(ctx, session.id, ctx.body.dontRememberMe);
 		return ctx.json({
 			user: user.user,
@@ -188,3 +183,28 @@ export const signInEmail = createAuthEndpoint(
 		});
 	},
 );
+
+const c = <
+	A extends {
+		additional: {
+			[key: string]: any;
+		};
+	},
+	T extends {
+		additional: A["additional"];
+		hooks: {
+			create: (user: A["additional"]) => any;
+		};
+	},
+>(
+	o: T,
+) => {};
+
+c({
+	additional: {
+		name: "string",
+	},
+	hooks: {
+		create(user) {},
+	},
+});

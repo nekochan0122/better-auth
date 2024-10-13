@@ -2,6 +2,8 @@ import type { Adapter, Where } from "./../types/adapter";
 import type { BetterAuthOptions } from "../types";
 import { getAuthTables } from "./get-tables";
 import { generateId } from "../utils/id";
+import type { FieldAttribute } from "./field";
+import { convertFromDB, convertToDB } from "./utils";
 
 export function getWithHooks(
 	adapter: Adapter,
@@ -12,13 +14,14 @@ export function getWithHooks(
 ) {
 	const hooks = ctx.hooks;
 	const tables = getAuthTables(ctx.options);
+
 	type Models = "user" | "account" | "session" | "verification";
 	async function createWithHooks<T extends Record<string, any>>(
 		data: T,
 		model: Models,
 	) {
 		let actualData = data;
-
+		const table = tables[model];
 		for (const hook of hooks || []) {
 			const toRun = hook[model]?.create?.before;
 			if (toRun) {
@@ -26,16 +29,18 @@ export function getWithHooks(
 				if (result === false) {
 					return null;
 				}
-				const isObject = typeof result === "object";
-				actualData = isObject ? (result as any).data : result;
+				const isObject = typeof result === "object" && "data" in result;
+				if (isObject) {
+					actualData = result.data as T;
+				}
 			}
 		}
 
 		const created = await adapter.create<T>({
-			model: tables[model].tableName,
+			model: table.tableName,
 			data: {
 				id: generateId(),
-				...actualData,
+				...convertToDB(table.fields, actualData),
 			},
 		});
 
@@ -46,7 +51,7 @@ export function getWithHooks(
 			}
 		}
 
-		return created;
+		return convertFromDB(table.fields, created);
 	}
 
 	async function updateWithHooks<T extends Record<string, any>>(
@@ -70,7 +75,7 @@ export function getWithHooks(
 
 		const updated = await adapter.update<T>({
 			model: tables[model].tableName,
-			update: actualData,
+			update: convertToDB(tables[model].fields, actualData),
 			where,
 		});
 
@@ -81,7 +86,7 @@ export function getWithHooks(
 			}
 		}
 
-		return updated;
+		return convertFromDB(tables[model].fields, updated);
 	}
 	return {
 		createWithHooks,

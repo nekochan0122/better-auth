@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createAuthEndpoint } from "../call";
 import { alphabet, generateRandomString } from "../../crypto/random";
-import { setSessionCookie } from "../../utils/cookies";
+import { setSessionCookie } from "../../cookies";
 import { sessionMiddleware } from "./session";
 import { APIError } from "better-call";
 
@@ -19,7 +19,9 @@ export const updateUser = createAuthEndpoint(
 		const { name, image } = ctx.body;
 		const session = ctx.context.session;
 		if (!image && !name) {
-			return ctx.json(session.user);
+			return ctx.json({
+				user: session.user,
+			});
 		}
 		const user = await ctx.context.internalAdapter.updateUserByEmail(
 			session.user.email,
@@ -28,7 +30,9 @@ export const updateUser = createAuthEndpoint(
 				image,
 			},
 		);
-		return ctx.json(user);
+		return ctx.json({
+			user,
+		});
 	},
 );
 
@@ -157,7 +161,6 @@ export const setPassword = createAuthEndpoint(
 		const passwordHash = await ctx.context.password.hash(newPassword);
 		if (!account) {
 			await ctx.context.internalAdapter.linkAccount({
-				id: generateRandomString(32, alphabet("a-z", "0-9", "A-Z")),
 				userId: session.user.id,
 				providerId: "credential",
 				accountId: session.user.id,

@@ -6,9 +6,9 @@ import { parseState } from "../../utils/state";
 import { createAuthEndpoint } from "../call";
 import { HIDE_METADATA } from "../../utils/hide-metadata";
 import { getAccountTokens } from "../../utils/getAccount";
-import { setSessionCookie } from "../../utils/cookies";
-import type { OAuth2Tokens } from "arctic";
+import { setSessionCookie } from "../../cookies";
 import { logger } from "../../utils/logger";
+import type { OAuth2Tokens } from "../../social-providers";
 
 export const callbackOAuth = createAuthEndpoint(
 	"/callback/:id",
@@ -46,6 +46,31 @@ export const callbackOAuth = createAuthEndpoint(
 				`${c.context.baseURL}/error?error=oauth_provider_not_found`,
 			);
 		}
+
+		const parsedState = parseState(c.query.state);
+		if (!parsedState.success) {
+			c.context.logger.error("Unable to parse state");
+			throw c.redirect(
+				`${c.context.baseURL}/error?error=please_restart_the_process`,
+			);
+		}
+
+		const {
+			data: { callbackURL, currentURL, code: stateCode },
+		} = parsedState;
+
+		const storedState = await c.getSignedCookie(
+			c.context.authCookies.state.name,
+			c.context.secret,
+		);
+
+		if (storedState !== stateCode) {
+			logger.error("OAuth state mismatch", storedState, stateCode);
+			throw c.redirect(
+				`${c.context.baseURL}/error?error=please_restart_the_process`,
+			);
+		}
+
 		const codeVerifier = await c.getSignedCookie(
 			c.context.authCookies.pkCodeVerifier.name,
 			c.context.secret,
@@ -60,7 +85,7 @@ export const callbackOAuth = createAuthEndpoint(
 		} catch (e) {
 			c.context.logger.error(e);
 			throw c.redirect(
-				`${c.context.baseURL}/error?error=oauth_code_verification_failed`,
+				`${c.context.baseURL}/error?error=please_restart_the_process`,
 			);
 		}
 		const user = await provider.getUserInfo(tokens).then((res) => res?.user);
@@ -69,24 +94,16 @@ export const callbackOAuth = createAuthEndpoint(
 			...user,
 			id,
 		});
-		const parsedState = parseState(c.query.state);
-		if (!parsedState.success) {
-			c.context.logger.error("Unable to parse state");
-			throw c.redirect(
-				`${c.context.baseURL}/error?error=invalid_state_parameter`,
-			);
-		}
-		const { callbackURL, currentURL, dontRememberMe } = parsedState.data;
 
 		if (!user || data.success === false) {
 			logger.error("Unable to get user info", data.error);
 			throw c.redirect(
-				`${c.context.baseURL}/error?error=oauth_validation_failed`,
+				`${c.context.baseURL}/error?error=please_restart_the_process`,
 			);
 		}
 		if (!callbackURL) {
 			throw c.redirect(
-				`${c.context.baseURL}/error?error=oauth_callback_url_not_found`,
+				`${c.context.baseURL}/error?error=please_restart_the_process`,
 			);
 		}
 		//find user in db
@@ -169,7 +186,6 @@ export const callbackOAuth = createAuthEndpoint(
 			const session = await c.context.internalAdapter.createSession(
 				userId || id,
 				c.request,
-				dontRememberMe,
 			);
 			if (!session) {
 				const url = new URL(currentURL || callbackURL);
@@ -177,7 +193,7 @@ export const callbackOAuth = createAuthEndpoint(
 				throw c.redirect(url.toString());
 			}
 			try {
-				await setSessionCookie(c, session.id, dontRememberMe);
+				await setSessionCookie(c, session.id);
 			} catch (e) {
 				c.context.logger.error("Unable to set session cookie", e);
 				const url = new URL(currentURL || callbackURL);
@@ -185,7 +201,7 @@ export const callbackOAuth = createAuthEndpoint(
 				throw c.redirect(url.toString());
 			}
 		} catch {
-			const url = new URL(currentURL || callbackURL);
+			const url = new URL(currentURL || callbackURL || "");
 			url.searchParams.set("error", "unable_to_create_session");
 			throw c.redirect(url.toString());
 		}

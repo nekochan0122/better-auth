@@ -1,4 +1,4 @@
-import { and, eq, or, SQL } from "drizzle-orm";
+import { and, asc, desc, eq, or, SQL } from "drizzle-orm";
 import type { Adapter, Where } from "../../types";
 import type { FieldType } from "../../db";
 import { getAuthTables } from "../../db/get-tables";
@@ -90,8 +90,14 @@ export const drizzleAdapter = (
 				schema,
 				usePlural: options.usePlural,
 			});
-			const res = await db.insert(schemaModel).values(val).returning();
+			const mutation = db.insert(schemaModel).values(val);
+			if (databaseType !== "mysql") return (await mutation.returning())[0];
 
+			await mutation;
+			const res = await db
+				.select()
+				.from(schemaModel)
+				.where(eq(schemaModel.id, (data.data as { id: string }).id));
 			return res[0];
 		},
 		async findOne(data) {
@@ -127,20 +133,22 @@ export const drizzleAdapter = (
 			else return null;
 		},
 		async findMany(data) {
-			const { model, where } = data;
+			const { model, where, limit, offset, sortBy } = data;
 
 			const schemaModel = getSchema(model, {
 				schema,
 				usePlural: options.usePlural,
 			});
 			const wheres = where ? whereConvertor(where, schemaModel) : [];
-			if (!wheres.length) {
-				return await db.select().from(schemaModel);
-			}
+			const fn = sortBy?.direction === "desc" ? desc : asc;
 			const res = await db
 				.select()
 				.from(schemaModel)
-				.where(...wheres);
+				.limit(limit || 100)
+				.offset(offset || 0)
+				.orderBy(fn(schemaModel[sortBy?.field || "id"]))
+				.where(...(wheres.length ? wheres : []));
+
 			return res;
 		},
 		async update(data) {
@@ -150,11 +158,17 @@ export const drizzleAdapter = (
 				usePlural: options.usePlural,
 			});
 			const wheres = whereConvertor(where, schemaModel);
-			const res = await db
+			const mutation = db
 				.update(schemaModel)
 				.set(update)
-				.where(...wheres)
-				.returning();
+				.where(...wheres);
+			if (databaseType !== "mysql") return (await mutation.returning())[0];
+
+			await mutation;
+			const res = await db
+				.select()
+				.from(schemaModel)
+				.where(eq(schemaModel.id, (data.update as { id: string }).id));
 			return res[0];
 		},
 		async delete(data) {

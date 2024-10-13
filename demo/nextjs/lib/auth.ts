@@ -1,9 +1,11 @@
 import { betterAuth } from "better-auth";
 import {
+	bearer,
 	organization,
 	passkey,
 	phoneNumber,
 	twoFactor,
+	admin,
 } from "better-auth/plugins";
 import { reactInvitationEmail } from "./email/invitation";
 import { LibsqlDialect } from "@libsql/kysely-libsql";
@@ -12,6 +14,7 @@ import { resend } from "./email/resend";
 
 const from = process.env.BETTER_AUTH_EMAIL || "delivered@resend.dev";
 const to = process.env.TEST_EMAIL || "";
+
 export const auth = betterAuth({
 	database: new LibsqlDialect({
 		url: process.env.TURSO_DATABASE_URL || "",
@@ -43,14 +46,6 @@ export const auth = betterAuth({
 		},
 	},
 	plugins: [
-		phoneNumber({
-			otp: {
-				sendOTP(phoneNumber, code) {
-					console.log(`Sending OTP to ${phoneNumber}: ${code}`);
-				},
-				sendOTPonSignUp: true,
-			},
-		}),
 		organization({
 			async sendInvitationEmail(data) {
 				const res = await resend.emails.send({
@@ -88,7 +83,85 @@ export const auth = betterAuth({
 			},
 		}),
 		passkey(),
+		bearer(),
+		admin(),
 	],
+	session: {
+		additionalFields: {
+			latitude: {
+				type: "string",
+				required: false,
+			},
+			longitude: {
+				type: "string",
+				required: false,
+			},
+			continent: {
+				type: "string",
+				required: false,
+			},
+			country: {
+				type: "string",
+				required: false,
+			},
+			region: {
+				type: "string",
+				required: false,
+			},
+			city: {
+				type: "string",
+				required: false,
+			},
+			timezone: {
+				type: "string",
+				required: false,
+			},
+			browserName: {
+				type: "string",
+				required: false,
+			},
+			browserVersion: {
+				type: "string",
+				required: false,
+			},
+			browserMajor: {
+				type: "string",
+				required: false,
+			},
+			engineName: {
+				type: "string",
+				required: false,
+			},
+			engineVersion: {
+				type: "string",
+				required: false,
+			},
+			osName: {
+				type: "string",
+				required: false,
+			},
+			osVersion: {
+				type: "string",
+				required: false,
+			},
+			deviceVendor: {
+				type: "string",
+				required: false,
+			},
+			deviceModel: {
+				type: "string",
+				required: false,
+			},
+			deviceType: {
+				type: "string",
+				required: false,
+			},
+			cpuArchitecture: {
+				type: "string",
+				required: false,
+			},
+		},
+	},
 	socialProviders: {
 		github: {
 			clientId: process.env.GITHUB_CLIENT_ID || "",
@@ -108,3 +181,5 @@ export const auth = betterAuth({
 		},
 	},
 });
+
+type A = typeof auth.$Infer.Session;

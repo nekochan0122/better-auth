@@ -5,7 +5,7 @@ import { existsSync } from "fs";
 import path from "path";
 import { logger } from "../../utils/logger";
 import { createKyselyAdapter } from "../../adapters/kysely-adapter/dialect";
-import ora from "ora";
+import yoctoSpinner from "yocto-spinner";
 import chalk from "chalk";
 import prompts from "prompts";
 import { getMigrations } from "../utils/get-migration";
@@ -47,10 +47,12 @@ export const migrate = new Command("migrate")
 			process.exit(1);
 		});
 		if (!db) {
-			logger.error("Invalid database configuration.");
+			logger.error(
+				"Invalid database configuration. Make sure you're not using adapters. Migrate command only works with built-in Kysely adapter.",
+			);
 			process.exit(1);
 		}
-		const spinner = ora("preparing migration...").start();
+		const spinner = yoctoSpinner({ text: "preparing migration..." }).start();
 
 		const { toBeAdded, toBeCreated, runMigrations } =
 			await getMigrations(config);
@@ -65,7 +67,7 @@ export const migrate = new Command("migrate")
 		logger.info(`🔑 The migration will affect the following:`);
 
 		for (const table of [...toBeCreated, ...toBeAdded]) {
-			logger.info(
+			console.log(
 				"->",
 				chalk.magenta(Object.keys(table.fields).join(", ")),
 				chalk.white("fields on"),

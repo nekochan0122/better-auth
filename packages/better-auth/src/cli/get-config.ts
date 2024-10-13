@@ -49,6 +49,7 @@ function getPathAliases(cwd: string): Record<string, string> | null {
 		}
 		return result;
 	} catch (error) {
+		console.error(error);
 		throw new BetterAuthError("Error parsing tsconfig.json");
 	}
 }
@@ -86,7 +87,6 @@ export async function getConfig({
 	try {
 		let configFile: BetterAuthOptions | null = null;
 		if (configPath) {
-			const alias = getPathAliases(cwd);
 			const { config } = await loadConfig<{
 				auth: {
 					options: BetterAuthOptions;

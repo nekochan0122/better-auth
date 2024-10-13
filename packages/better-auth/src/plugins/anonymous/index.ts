@@ -1,7 +1,6 @@
 import { createAuthEndpoint, sessionMiddleware } from "../../api";
-import { alphabet, generateRandomString } from "../../crypto/random";
 import type { BetterAuthPlugin } from "../../types";
-import { setSessionCookie } from "../../utils/cookies";
+import { setSessionCookie } from "../../cookies";
 import { z } from "zod";
 import { generateId } from "../../utils/id";
 import { getOrigin } from "../../utils/base-url";
@@ -95,7 +94,6 @@ export const anonymous = (options?: AnonymousOptions) => {
 					const hash = await ctx.context.password.hash(password);
 					const updateUserAccount =
 						await ctx.context.internalAdapter.linkAccount({
-							id: generateRandomString(32, alphabet("a-z", "0-9", "A-Z")),
 							userId: updatedUser.id,
 							providerId: "credential",
 							password: hash,

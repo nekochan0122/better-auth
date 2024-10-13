@@ -43,14 +43,14 @@ export const microsoft = (options: MicrosoftOptions) => {
 		createAuthorizationURL(data) {
 			const scopes = options.scope ||
 				data.scopes || ["openid", "profile", "email", "User.Read"];
-			return createAuthorizationURL(
-				"microsoft",
+			return createAuthorizationURL({
+				id: "microsoft",
 				options,
 				authorizationEndpoint,
-				data.state,
-				data.codeVerifier,
+				state: data.state,
+				codeVerifier: data.codeVerifier,
 				scopes,
-			);
+			});
 		},
 		validateAuthorizationCode(code, codeVerifier, redirectURI) {
 			return validateAuthorizationCode({
@@ -63,14 +63,16 @@ export const microsoft = (options: MicrosoftOptions) => {
 			});
 		},
 		async getUserInfo(token) {
-			const user = parseJWT(token.idToken())
-				?.payload as MicrosoftEntraIDProfile;
+			if (!token.idToken) {
+				return null;
+			}
+			const user = parseJWT(token.idToken)?.payload as MicrosoftEntraIDProfile;
 			const profilePhotoSize = options.profilePhotoSize || 48;
 			await betterFetch<ArrayBuffer>(
 				`https://graph.microsoft.com/v1.0/me/photos/${profilePhotoSize}x${profilePhotoSize}/$value`,
 				{
 					headers: {
-						Authorization: `Bearer ${token.accessToken()}`,
+						Authorization: `Bearer ${token.accessToken}`,
 					},
 					async onResponse(context) {
 						if (options.disableProfilePhoto || !context.response.ok) {

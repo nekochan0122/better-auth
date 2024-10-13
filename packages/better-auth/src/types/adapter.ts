@@ -1,5 +1,3 @@
-import type { Session } from "../db/schema";
-import type { FieldAttribute } from "../db";
 import type { BetterAuthOptions } from "./options";
 
 /**
@@ -30,6 +28,12 @@ export interface Adapter {
 	findMany: <T>(data: {
 		model: string;
 		where?: Where[];
+		limit?: number;
+		sortBy?: {
+			field: string;
+			direction: "asc" | "desc";
+		};
+		offset?: number;
 	}) => Promise<T[]>;
 	update: <T>(data: {
 		model: string;
@@ -55,12 +59,12 @@ export interface Adapter {
 	options?: Record<string, any>;
 }
 
-export interface SessionAdapter {
-	create: (data: {
-		userId: string;
-		expiresAt: Date;
-	}) => Promise<Session>;
-	findOne: (data: { userId: string }) => Promise<Session | null>;
-	update: (data: Session) => Promise<Session>;
-	delete: (data: { sessionId: string }) => Promise<void>;
+export interface SecondaryStorage {
+	get: (key: string) => Promise<string | null> | string | null;
+	set: (
+		key: string,
+		value: string,
+		ttl?: number,
+	) => Promise<void | null | string> | void;
+	delete: (key: string) => Promise<void | null | string> | void;
 }

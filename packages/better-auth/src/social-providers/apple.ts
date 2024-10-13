@@ -1,8 +1,5 @@
-import { OAuth2Tokens } from "arctic";
 import type { OAuthProvider, ProviderOptions } from ".";
 import { parseJWT } from "oslo/jwt";
-import { betterFetch } from "@better-fetch/fetch";
-import { BetterAuthError } from "../error/better-auth-error";
 import { getRedirectURI, validateAuthorizationCode } from "./utils";
 export interface AppleProfile {
 	/**
@@ -75,7 +72,10 @@ export const apple = (options: AppleOptions) => {
 			});
 		},
 		async getUserInfo(token) {
-			const data = parseJWT(token.idToken())?.payload as AppleProfile | null;
+			if (!token.idToken) {
+				return null;
+			}
+			const data = parseJWT(token.idToken)?.payload as AppleProfile | null;
 			if (!data) {
 				return null;
 			}

@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { getTestInstance } from "../../test-utils/test-instance";
 import { createAuthClient } from "../../client";
-import { parseSetCookieHeader } from "../../utils/cookies";
+import { parseSetCookieHeader } from "../../cookies";
 
 describe("updateUser", async () => {
-	const { auth, client, testUser, sessionSetter, customFetchImpl } =
+	const { client, testUser, sessionSetter, customFetchImpl } =
 		await getTestInstance();
 	const headers = new Headers();
 	const session = await client.signIn.email({
@@ -28,7 +28,7 @@ describe("updateUser", async () => {
 				headers,
 			},
 		});
-		expect(updated.data?.name).toBe("newName");
+		expect(updated.data?.user.name).toBe("newName");
 	});
 
 	it("should update the user's password", async () => {

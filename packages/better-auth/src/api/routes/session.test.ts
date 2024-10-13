@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { getTestInstance } from "../../test-utils/test-instance";
-import { parseSetCookieHeader } from "../../utils/cookies";
+import { parseSetCookieHeader } from "../../cookies";
 import { getDate } from "../../utils/date";
 
 describe("session", async () => {
 	const { client, testUser, sessionSetter } = await getTestInstance();
 
 	it("should set cookies correctly on sign in", async () => {
-		await client.signIn.email(
+		const res = await client.signIn.email(
 			{
 				email: testUser.email,
 				password: testUser.password,
@@ -26,6 +26,9 @@ describe("session", async () => {
 				},
 			},
 		);
+		const expiresAt = new Date(res.data?.session?.expiresAt || "");
+		const now = new Date();
+		expect(expiresAt.getDate()).toBeGreaterThan(now.getDate() + 6);
 	});
 
 	it("should return null when not authenticated", async () => {
@@ -121,6 +124,32 @@ describe("session", async () => {
 		).toBeLessThanOrEqual(getDate(1000 * 60 * 60 * 24).valueOf());
 	});
 
+	it("should set cookies correctly on sign in after changing config", async () => {
+		const res = await client.signIn.email(
+			{
+				email: testUser.email,
+				password: testUser.password,
+			},
+			{
+				onSuccess(context) {
+					const header = context.response.headers.get("set-cookie");
+					const cookies = parseSetCookieHeader(header || "");
+
+					expect(cookies.get("better-auth.session_token")).toMatchObject({
+						value: expect.any(String),
+						"max-age": (60 * 60 * 24 * 7).toString(),
+						path: "/",
+						httponly: true,
+						samesite: "Lax",
+					});
+				},
+			},
+		);
+		const expiresAt = new Date(res.data?.session?.expiresAt || "");
+		const now = new Date();
+		expect(expiresAt.getDate()).toBeGreaterThan(now.getDate() + 6);
+	});
+
 	it("should clear session on sign out", async () => {
 		let headers = new Headers();
 		const res = await client.signIn.email(
@@ -210,5 +239,55 @@ describe("session", async () => {
 			},
 		});
 		expect(revokeRes.data?.status).toBe(true);
+	});
+});
+
+describe("session storage", async () => {
+	let store = new Map<string, string>();
+	const { client, signInWithTestUser } = await getTestInstance({
+		secondaryStorage: {
+			set(key, value, ttl) {
+				store.set(key, value);
+			},
+			get(key) {
+				return store.get(key) || null;
+			},
+			delete(key) {
+				store.delete(key);
+			},
+		},
+		rateLimit: {
+			enabled: false,
+		},
+	});
+
+	it("should store session in secondary storage", async () => {
+		//since the instance creates a session on init, we expect the store to have 1 item
+		expect(store.size).toBe(1);
+		const { headers } = await signInWithTestUser();
+		expect(store.size).toBe(2);
+		const session = await client.session({
+			fetchOptions: {
+				headers,
+			},
+		});
+		expect(session.data).toMatchObject({
+			session: {
+				id: expect.any(String),
+				userId: expect.any(String),
+				expiresAt: expect.any(String),
+				ipAddress: expect.any(String),
+				userAgent: expect.any(String),
+			},
+			user: {
+				id: expect.any(String),
+				name: "test",
+				email: "test@test.com",
+				emailVerified: false,
+				image: null,
+				createdAt: expect.any(String),
+				updatedAt: expect.any(String),
+			},
+		});
 	});
 });

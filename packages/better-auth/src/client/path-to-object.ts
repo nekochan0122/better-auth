@@ -11,6 +11,7 @@ import type {
 } from "../types/helper";
 import type {
 	ClientOptions,
+	InferAdditionalFromClient,
 	InferSessionFromClient,
 	InferUserFromClient,
 } from "./types";
@@ -28,6 +29,15 @@ export type PathToObject<
 	: T extends `/${infer Segment}`
 		? { [K in CamelCase<Segment>]: Fn }
 		: never;
+
+type InferSignUpEmailCtx<ClientOpts extends ClientOptions> = {
+	email: string;
+	name: string;
+	password: string;
+	image?: string;
+	callbackURL?: string;
+	fetchOptions?: BetterFetchOption<any, any, any>;
+} & UnionToIntersection<InferAdditionalFromClient<ClientOpts, "user", "input">>;
 
 type InferCtx<C extends Context<any, any>> = C["body"] extends Record<
 	string,
@@ -50,23 +60,20 @@ type InferCtx<C extends Context<any, any>> = C["body"] extends Record<
 
 type MergeRoutes<T> = UnionToIntersection<T>;
 
-type InferReturn<R, O extends ClientOptions> = R extends
-	| {
-			user: any;
-	  }
-	| {
-			session: any;
-	  }
-	| {
-			user: any;
-			session: any;
-	  }
+type InferReturn<R, O extends ClientOptions> = R extends Record<string, any>
 	? StripEmptyObjects<
 			{
-				user: InferUserFromClient<O>;
-				session: InferSessionFromClient<O>;
+				user: R extends { user: any } ? InferUserFromClient<O> : never;
+				users: R extends { users: any[] } ? InferUserFromClient<O>[] : never;
+				session: R extends { session: any } ? InferSessionFromClient<O> : never;
+				sessions: R extends { sessions: any[] }
+					? InferSessionFromClient<O>[]
+					: never;
 			} & {
-				[key in Exclude<keyof R, "user" | "session">]: R[key];
+				[key in Exclude<
+					keyof R,
+					"user" | "users" | "session" | "sessions"
+				>]: R[key];
 			}
 		>
 	: R;
@@ -86,7 +93,11 @@ export type InferRoute<API, COpts extends ClientOptions> = API extends {
 							? (
 									...data: HasRequiredKeys<InferCtx<C>> extends true
 										? [
-												Prettify<InferCtx<C>>,
+												Prettify<
+													T["path"] extends `/sign-up/email`
+														? InferSignUpEmailCtx<COpts>
+														: InferCtx<C>
+												>,
 												BetterFetchOption<C["body"], C["query"], C["params"]>?,
 											]
 										: [
@@ -101,6 +112,7 @@ export type InferRoute<API, COpts extends ClientOptions> = API extends {
 				>
 		: never
 	: never;
+
 export type InferRoutes<
 	API extends Record<string, Endpoint>,
 	ClientOpts extends ClientOptions,
