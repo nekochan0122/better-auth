@@ -16,6 +16,7 @@ import { userSchema } from "../../db/schema";
 import { generateId } from "../../utils/id";
 import { getAccountTokens } from "../../utils/getAccount";
 import { setSessionCookie } from "../../cookies";
+import { redirectURLMiddleware } from "../../api/middlewares/redirect";
 
 /**
  * Configuration interface for generic OAuth providers.
@@ -147,6 +148,7 @@ export const genericOAuth = (options: GenericOAuthOptions) => {
 						providerId: z.string(),
 						callbackURL: z.string().optional(),
 					}),
+					use: [redirectURLMiddleware],
 				},
 				async (ctx) => {
 					const { providerId } = ctx.body;
@@ -202,13 +204,12 @@ export const genericOAuth = (options: GenericOAuthOptions) => {
 						? ctx.body.callbackURL
 						: `${currentURL?.origin}${ctx.body.callbackURL || ""}`;
 					const state = generateState(
-						callbackURL || currentURL?.origin || ctx.context.baseURL,
-						ctx.query?.currentURL,
+						callbackURL || currentURL?.origin || ctx.context.options.baseURL,
 					);
 					const cookie = ctx.context.authCookies;
 					await ctx.setSignedCookie(
 						cookie.state.name,
-						state.code,
+						state,
 						ctx.context.secret,
 						cookie.state.options,
 					);
@@ -229,7 +230,7 @@ export const genericOAuth = (options: GenericOAuthOptions) => {
 								`${ctx.context.baseURL}/oauth2/callback/${providerId}`,
 						},
 						authorizationEndpoint: finalAuthUrl,
-						state: state.state,
+						state: state,
 						codeVerifier: codeVerifier,
 						scopes: scopes || [],
 						disablePkce: !pkce,
@@ -249,7 +250,7 @@ export const genericOAuth = (options: GenericOAuthOptions) => {
 
 					return {
 						url: authUrl.toString(),
-						state: state.state,
+						state: state,
 						codeVerifier,
 						redirect: true,
 					};
@@ -297,18 +298,18 @@ export const genericOAuth = (options: GenericOAuthOptions) => {
 							`${ctx.context.baseURL}/error?error=invalid_state`,
 						);
 					}
+					const state = ctx.query.state;
 					const {
 						data: { callbackURL, currentURL, code },
 					} = parsedState;
 					const errorURL =
 						parsedState.data?.currentURL || `${ctx.context.baseURL}/error`;
-					const storedCode = await ctx.getSignedCookie(
+					const storedState = await ctx.getSignedCookie(
 						ctx.context.authCookies.state.name,
 						ctx.context.secret,
 					);
-
-					if (storedCode !== code) {
-						logger.error("OAuth code mismatch", storedCode, code);
+					if (storedState !== state) {
+						logger.error("OAuth code mismatch");
 						throw ctx.redirect(`${errorURL}?error=please_restart_the_process`);
 					}
 					let finalTokenUrl = provider.tokenUrl;

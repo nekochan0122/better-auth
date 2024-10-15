@@ -8,7 +8,7 @@ import type { BetterSqlite3Database, MysqlPool } from "./database";
 import type { KyselyDatabaseType } from "../adapters/kysely-adapter/types";
 import type { FieldAttribute } from "../db";
 import type { RateLimit } from "./models";
-import type { EligibleCookies } from "../cookies";
+import type { AuthContext } from ".";
 
 export interface BetterAuthOptions {
 	/**
@@ -192,6 +192,18 @@ export interface BetterAuthOptions {
 		additionalFields?: {
 			[key: string]: FieldAttribute;
 		};
+		/**
+		 * By default if secondary storage is provided
+		 * the session is stored in the secondary storage.
+		 *
+		 * Set this to true to store the session in the database
+		 * as well.
+		 *
+		 * Reads are always done from the secondary storage.
+		 *
+		 * @default false
+		 */
+		storeSessionInDatabase?: boolean;
 	};
 	account?: {
 		modelName?: string;
@@ -423,5 +435,23 @@ export interface BetterAuthOptions {
 				after?: (verification: Verification) => Promise<void>;
 			};
 		};
+	};
+	/**
+	 * API error handling
+	 */
+	onAPIError?: {
+		/**
+		 * Throw an error on API error
+		 *
+		 * @default false
+		 */
+		throw?: boolean;
+		/**
+		 * Custom error handler
+		 *
+		 * @param error
+		 * @param ctx - Auth context
+		 */
+		onError?: (error: unknown, ctx: AuthContext) => void | Promise<void>;
 	};
 }

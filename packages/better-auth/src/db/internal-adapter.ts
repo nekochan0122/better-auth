@@ -128,22 +128,31 @@ export const createInternalAdapter = (
 				userAgent: headers?.get("user-agent") || "",
 				...override,
 			};
-			const session = await createWithHooks(data, "session");
-			if (secondaryStorage && session) {
-				const user = await adapter.findOne<User>({
-					model: tables.user.tableName,
-					where: [{ field: "id", value: userId }],
-				});
-				secondaryStorage.set(
-					session.id,
-					JSON.stringify({
-						session,
-						user,
-					}),
-					sessionExpiration,
-				);
-			}
-			return session;
+			const res = await createWithHooks(
+				data,
+				"session",
+				secondaryStorage
+					? {
+							fn: async (data) => {
+								const user = await adapter.findOne<User>({
+									model: tables.user.tableName,
+									where: [{ field: "id", value: userId }],
+								});
+								secondaryStorage.set(
+									data.id,
+									JSON.stringify({
+										session: data,
+										user,
+									}),
+									sessionExpiration,
+								);
+								return data;
+							},
+							executeMainFn: options.session?.storeSessionInDatabase,
+						}
+					: undefined,
+			);
+			return res;
 		},
 		findSession: async (sessionId: string) => {
 			if (secondaryStorage) {
@@ -203,12 +212,55 @@ export const createInternalAdapter = (
 				session,
 				[{ field: "id", value: sessionId }],
 				"session",
+				secondaryStorage
+					? {
+							async fn(data) {
+								const currentSession = await secondaryStorage.get(sessionId);
+								let updatedSession: Session | null = null;
+								if (currentSession) {
+									const parsedSession = JSON.parse(currentSession) as {
+										session: Session;
+										user: User;
+									};
+									updatedSession = {
+										...parsedSession.session,
+										...data,
+									};
+									await secondaryStorage.set(
+										sessionId,
+										JSON.stringify({
+											session: updatedSession,
+											user: parsedSession.user,
+										}),
+										parsedSession.session.expiresAt
+											? new Date(parsedSession.session.expiresAt).getTime()
+											: undefined,
+									);
+								} else {
+									return null;
+								}
+							},
+							executeMainFn: options.session?.storeSessionInDatabase,
+						}
+					: undefined,
 			);
 			return updatedSession;
 		},
 		deleteSession: async (id: string) => {
 			if (secondaryStorage) {
 				await secondaryStorage.delete(id);
+				if (options.session?.storeSessionInDatabase) {
+					await adapter.delete<Session>({
+						model: tables.session.tableName,
+						where: [
+							{
+								field: "id",
+								value: id,
+							},
+						],
+					});
+				}
+				return;
 			}
 			await adapter.delete<Session>({
 				model: tables.session.tableName,
@@ -226,7 +278,7 @@ export const createInternalAdapter = (
 					model: tables.session.tableName,
 					where: [
 						{
-							field: "userId",
+							field: tables.session.fields.userId.fieldName || "userId",
 							value: userId,
 						},
 					],
@@ -234,6 +286,18 @@ export const createInternalAdapter = (
 				for (const session of sessions) {
 					await secondaryStorage.delete(session.id);
 				}
+				if (options.session?.storeSessionInDatabase) {
+					await adapter.delete({
+						model: tables.session.tableName,
+						where: [
+							{
+								field: tables.session.fields.userId.fieldName || "userId",
+								value: userId,
+							},
+						],
+					});
+				}
+				return;
 			}
 			await adapter.delete({
 				model: tables.session.tableName,
