@@ -1,6 +1,6 @@
-import type { OAuthProvider, ProviderOptions } from ".";
+import type { OAuthProvider, ProviderOptions } from "../oauth2";
 import { parseJWT } from "oslo/jwt";
-import { getRedirectURI, validateAuthorizationCode } from "./utils";
+import { validateAuthorizationCode } from "../oauth2";
 export interface AppleProfile {
 	/**
 	 * The subject registered claim identifies the principal that’s the subject
@@ -52,7 +52,8 @@ export const apple = (options: AppleOptions) => {
 		id: "apple",
 		name: "Apple",
 		createAuthorizationURL({ state, scopes, redirectURI }) {
-			const _scope = options.scope || scopes || ["email", "name", "openid"];
+			const _scope = scopes || ["email", "name", "openid"];
+			options.scope && _scope.push(...options.scope);
 			return new URL(
 				`https://appleid.apple.com/auth/authorize?client_id=${
 					options.clientId
@@ -61,12 +62,11 @@ export const apple = (options: AppleOptions) => {
 				}&scope=${_scope.join(" ")}&state=${state}`,
 			);
 		},
-		validateAuthorizationCode: async (code, codeVerifier, redirectURI) => {
+		validateAuthorizationCode: async ({ code, codeVerifier, redirectURI }) => {
 			return validateAuthorizationCode({
 				code,
 				codeVerifier,
-				redirectURI:
-					redirectURI || getRedirectURI("apple", options.redirectURI),
+				redirectURI: options.redirectURI || redirectURI,
 				options,
 				tokenEndpoint,
 			});

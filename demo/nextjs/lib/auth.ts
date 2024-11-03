@@ -1,10 +1,11 @@
 import { betterAuth } from "better-auth";
 import {
 	bearer,
+	admin,
+	multiSession,
 	organization,
 	passkey,
 	twoFactor,
-	admin,
 } from "better-auth/plugins";
 import { reactInvitationEmail } from "./email/invitation";
 import { LibsqlDialect } from "@libsql/kysely-libsql";
@@ -24,9 +25,27 @@ export const auth = betterAuth({
 		dialect: libsql,
 		type: "sqlite",
 	},
+	emailVerification: {
+		async sendVerificationEmail(user, url) {
+			console.log("Sending verification email to", user.email);
+			const res = await resend.emails.send({
+				from,
+				to: to || user.email,
+				subject: "Verify your email address",
+				html: `<a href="${url}">Verify your email address</a>`,
+			});
+			console.log(res, user.email);
+		},
+		sendOnSignUp: true,
+	},
+	account: {
+		accountLinking: {
+			trustedProviders: ["google", "github"],
+		},
+	},
 	emailAndPassword: {
 		enabled: true,
-		async sendResetPassword(url, user) {
+		async sendResetPassword(user, url) {
 			await resend.emails.send({
 				from,
 				to: user.email,
@@ -37,16 +56,27 @@ export const auth = betterAuth({
 				}),
 			});
 		},
-		sendEmailVerificationOnSignUp: true,
-		async sendVerificationEmail(email, url) {
-			console.log("Sending verification email to", email);
-			const res = await resend.emails.send({
-				from,
-				to: to || email,
-				subject: "Verify your email address",
-				html: `<a href="${url}">Verify your email address</a>`,
-			});
-			console.log(res, email);
+	},
+	socialProviders: {
+		github: {
+			clientId: process.env.GITHUB_CLIENT_ID || "",
+			clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+		},
+		google: {
+			clientId: process.env.GOOGLE_CLIENT_ID || "",
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+		},
+		discord: {
+			clientId: process.env.DISCORD_CLIENT_ID || "",
+			clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
+		},
+		microsoft: {
+			clientId: process.env.MICROSOFT_CLIENT_ID || "",
+			clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+		},
+		twitch: {
+			clientId: process.env.TWITCH_CLIENT_ID || "",
+			clientSecret: process.env.TWITCH_CLIENT_SECRET || "",
 		},
 	},
 	plugins: [
@@ -64,10 +94,10 @@ export const auth = betterAuth({
 						inviteLink:
 							process.env.NODE_ENV === "development"
 								? `http://localhost:3000/accept-invitation/${data.id}`
-								: `https://${
+								: `${
+										process.env.BETTER_AUTH_URL ||
 										process.env.NEXT_PUBLIC_APP_URL ||
-										process.env.VERCEL_URL ||
-										process.env.BETTER_AUTH_URL
+										process.env.VERCEL_URL
 									}/accept-invitation/${data.id}`,
 					}),
 				});
@@ -89,23 +119,6 @@ export const auth = betterAuth({
 		passkey(),
 		bearer(),
 		admin(),
+		multiSession(),
 	],
-	socialProviders: {
-		github: {
-			clientId: process.env.GITHUB_CLIENT_ID || "",
-			clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-		},
-		google: {
-			clientId: process.env.GOOGLE_CLIENT_ID || "",
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-		},
-		discord: {
-			clientId: process.env.DISCORD_CLIENT_ID || "",
-			clientSecret: process.env.DISCORD_CLIENT_SECRET || "",
-		},
-		microsoft: {
-			clientId: process.env.MICROSOFT_CLIENT_ID || "",
-			clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
-		},
-	},
 });

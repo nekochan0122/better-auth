@@ -3,7 +3,6 @@ import { createAuthEndpoint } from "../../api/call";
 import type { BetterAuthPlugin } from "../../types/plugins";
 import { APIError } from "better-call";
 import type { Account, User } from "../../db/schema";
-import { signUpEmail } from "../../api/routes/sign-up";
 
 export const username = () => {
 	return {
@@ -21,7 +20,7 @@ export const username = () => {
 				},
 				async (ctx) => {
 					const user = await ctx.context.adapter.findOne<User>({
-						model: "user",
+						model: ctx.context.tables.user.tableName,
 						where: [
 							{
 								field: "username",
@@ -37,14 +36,18 @@ export const username = () => {
 						});
 					}
 					const account = await ctx.context.adapter.findOne<Account>({
-						model: "account",
+						model: ctx.context.tables.account.tableName,
 						where: [
 							{
-								field: "userId",
+								field:
+									ctx.context.tables.account.fields.userId.fieldName ||
+									"userId",
 								value: user.id,
 							},
 							{
-								field: "providerId",
+								field:
+									ctx.context.tables.account.fields.providerId.fieldName ||
+									"providerId",
 								value: "credential",
 							},
 						],
@@ -101,46 +104,7 @@ export const username = () => {
 					});
 				},
 			),
-			signUpUsername: createAuthEndpoint(
-				"/sign-up/username",
-				{
-					method: "POST",
-					body: z.object({
-						username: z.string().min(3).max(20),
-						name: z.string(),
-						email: z.string().email(),
-						password: z.string(),
-						image: z.string().optional(),
-					}),
-				},
-				async (ctx) => {
-					const res = await signUpEmail()({
-						...ctx,
-						_flag: "json",
-					});
-					if (res.error) {
-						return ctx.json(null, {
-							status: 400,
-							body: {
-								message: res.error,
-								status: 400,
-							},
-						});
-					}
-					const updated = await ctx.context.internalAdapter.updateUserByEmail(
-						res.user?.email,
-						{
-							username: ctx.body.username,
-						},
-					);
-					return ctx.json({
-						user: updated,
-						session: res.session,
-					});
-				},
-			),
 		},
-
 		schema: {
 			user: {
 				fields: {

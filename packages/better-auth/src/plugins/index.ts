@@ -11,3 +11,6 @@ export * from "./phone-number";
 export * from "./anonymous";
 export * from "./admin";
 export * from "./generic-oauth";
+export * from "./jwt";
+export * from "./multi-session";
+export * from "./email-otp";

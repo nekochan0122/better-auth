@@ -1,12 +1,8 @@
 import { parseJWT } from "oslo/jwt";
-import type { OAuthProvider, ProviderOptions } from ".";
-import { BetterAuthError } from "../error/better-auth-error";
+import type { OAuthProvider, ProviderOptions } from "../oauth2";
+import { BetterAuthError } from "../error";
 import { logger } from "../utils/logger";
-import {
-	createAuthorizationURL,
-	getRedirectURI,
-	validateAuthorizationCode,
-} from "./utils";
+import { createAuthorizationURL, validateAuthorizationCode } from "../oauth2";
 
 export interface GoogleProfile {
 	aud: string;
@@ -19,7 +15,7 @@ export interface GoogleProfile {
 	 * Western languages.
 	 */
 	family_name: string;
-	/*s*
+	/**
 	 * The given name of the user, or first name in most
 	 * Western languages.
 	 */
@@ -35,13 +31,16 @@ export interface GoogleProfile {
 	sub: string;
 }
 
-export interface GoogleOptions extends ProviderOptions {}
+export interface GoogleOptions extends ProviderOptions {
+	accessType?: "offline" | "online";
+	prompt?: "none" | "consent" | "select_account";
+}
 
 export const google = (options: GoogleOptions) => {
 	return {
 		id: "google",
 		name: "Google",
-		createAuthorizationURL({ state, scopes, codeVerifier, redirectURI }) {
+		async createAuthorizationURL({ state, scopes, codeVerifier, redirectURI }) {
 			if (!options.clientId || !options.clientSecret) {
 				logger.error(
 					"Client Id and Client Secret is required for Google. Make sure to provide them in the options.",
@@ -51,23 +50,28 @@ export const google = (options: GoogleOptions) => {
 			if (!codeVerifier) {
 				throw new BetterAuthError("codeVerifier is required for Google");
 			}
-			const _scopes = options.scope || scopes || ["email", "profile"];
-			const url = createAuthorizationURL({
+			const _scopes = scopes || ["email", "profile", "openid"];
+			options.scope && _scopes.push(...options.scope);
+
+			const url = await createAuthorizationURL({
 				id: "google",
 				options,
 				authorizationEndpoint: "https://accounts.google.com/o/oauth2/auth",
 				scopes: _scopes,
 				state,
 				codeVerifier,
+				redirectURI,
 			});
+			options.accessType &&
+				url.searchParams.set("access_type", options.accessType);
+			options.prompt && url.searchParams.set("prompt", options.prompt);
 			return url;
 		},
-		validateAuthorizationCode: async (code, codeVerifier, redirectURI) => {
+		validateAuthorizationCode: async ({ code, codeVerifier, redirectURI }) => {
 			return validateAuthorizationCode({
 				code,
 				codeVerifier,
-				redirectURI:
-					redirectURI || getRedirectURI("google", options.redirectURI),
+				redirectURI: options.redirectURI || redirectURI,
 				options,
 				tokenEndpoint: "https://oauth2.googleapis.com/token",
 			});

@@ -63,7 +63,14 @@ export const getPasskeyActions = (
 				return verified;
 			}
 		} catch (e) {
-			console.log(e);
+			return {
+				data: null,
+				error: {
+					message: "auth cancelled",
+					status: 400,
+					statusText: "BAD_REQUEST",
+				},
+			};
 		}
 	};
 
@@ -184,7 +191,6 @@ export const passkeyClient = () => {
 				$fetch,
 				{
 					method: "GET",
-					credentials: "include",
 				},
 			);
 			return {

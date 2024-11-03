@@ -17,7 +17,7 @@ import {
 	type Role,
 	defaultRoles,
 	type defaultStatements,
-} from "./access";
+} from "../access";
 import { getOrgAdapter } from "./adapter";
 import { orgSessionMiddleware } from "./call";
 import {
@@ -225,7 +225,7 @@ export const organization = <O extends OrganizationOptions>(options?: O) => {
 							message: "No active organization",
 						});
 					}
-					const adapter = getOrgAdapter(ctx.context.adapter);
+					const adapter = getOrgAdapter(ctx.context);
 					const member = await adapter.findMemberByOrgId({
 						userId: ctx.context.session.user.id,
 						organizationId:

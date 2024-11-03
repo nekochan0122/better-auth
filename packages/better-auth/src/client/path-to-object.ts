@@ -39,6 +39,14 @@ type InferSignUpEmailCtx<ClientOpts extends ClientOptions> = {
 	fetchOptions?: BetterFetchOption<any, any, any>;
 } & UnionToIntersection<InferAdditionalFromClient<ClientOpts, "user", "input">>;
 
+type InferUserUpdateCtx<ClientOpts extends ClientOptions> = {
+	image?: string;
+	name?: string;
+	fetchOptions?: BetterFetchOption<any, any, any>;
+} & Partial<
+	UnionToIntersection<InferAdditionalFromClient<ClientOpts, "user", "input">>
+>;
+
 type InferCtx<C extends Context<any, any>> = C["body"] extends Record<
 	string,
 	any
@@ -82,9 +90,13 @@ export type InferRoute<API, COpts extends ClientOptions> = API extends {
 	[key: string]: infer T;
 }
 	? T extends Endpoint
-		? T["options"]["metadata"] extends {
-				isAction: false;
-			}
+		? T["options"]["metadata"] extends
+				| {
+						isAction: false;
+				  }
+				| {
+						SERVER_ONLY: true;
+				  }
 			? {}
 			: PathToObject<
 					T["path"],
@@ -101,7 +113,11 @@ export type InferRoute<API, COpts extends ClientOptions> = API extends {
 												BetterFetchOption<C["body"], C["query"], C["params"]>?,
 											]
 										: [
-												Prettify<InferCtx<C>>?,
+												Prettify<
+													T["path"] extends `/update-user`
+														? InferUserUpdateCtx<COpts>
+														: InferCtx<C>
+												>?,
 												BetterFetchOption<C["body"], C["query"], C["params"]>?,
 											]
 								) => Promise<
